@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RTM Pick Reader</title><style>
+:root{--bg:#15130f;--card:#211d17;--ink:#ece8df;--muted:#a39c8f;--line:#3a342b;--turf:#f08a3c;--up:#7fd18b}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,sans-serif;padding:24px 16px 96px}
+main{max-width:640px;margin:0 auto}h1{font:700 26px system-ui;margin:0 0 6px;color:var(--turf)}h2{font:700 18px system-ui;margin:26px 0 6px}
+.bm{display:inline-block;margin:10px 0;padding:12px 18px;border:2px solid var(--turf);border-radius:8px;color:var(--turf);font-weight:700;text-decoration:none;background:var(--card)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0}
+#qr{background:#fff;padding:10px;display:inline-block;border-radius:8px;margin:8px 0}#qr img,#qr canvas{display:block}
+#plink{word-break:break-all;font-size:13px;color:var(--muted);margin:4px 0 8px}
+button{font:600 14px system-ui;padding:8px 14px;border-radius:8px;border:1px solid var(--turf);background:var(--bg);color:var(--turf);cursor:pointer}
+ol li{margin:8px 0}.note{color:var(--muted);font-size:13px}code{background:var(--bg);padding:1px 5px;border-radius:4px}
+#paired{display:none;color:var(--up);font-weight:600}
+</style></head><body><main>
+<h1>RTM Pick Reader</h1>
+<p>ESPN doesn't publish picks while a draft is running, so your Mac reads them from the ESPN draft room and your phone shows who to take. Read-only: it never clicks or drafts anything.</p>
+
+<h2>One-time setup on your Mac (about 3 minutes)</h2>
+<div class="box"><ol>
+<li><a class="bm" href="rtm-pick-reader.zip" download>Download RTM Pick Reader (Chrome extension)</a><br>Double-click the zip in Downloads. Move the <b>rtm-pick-reader</b> folder somewhere it will stay (for example Documents). Don't delete it later: Chrome runs the extension from that folder.</li>
+<li>In Chrome, go to <code>chrome://extensions</code>, turn on <b>Developer mode</b> (top right), click <b>Load unpacked</b>, and choose the <b>rtm-pick-reader</b> folder.</li>
+<li>Click the puzzle-piece icon in Chrome's toolbar, pin <b>RTM Pick Reader</b>, then click it. Scan its QR code with your phone, open the link, and on your phone tap Share &rarr; <b>Add to Home Screen</b>.</li>
+</ol></div>
+
+<h2>On draft day</h2>
+<ol>
+<li><b>Mac:</b> plug it in and open your ESPN draft room in Chrome. That's it: the extension starts by itself (a green "RTM" badge appears in the corner) and keeps the screen awake. Keep the draft room as the front tab.</li>
+<li><b>Phone:</b> open the RTM board from your home screen. It shows <b>YOU ARE ON THE CLOCK</b> and who to take; make the pick in the ESPN app.</li>
+</ol>
+<p class="note">If the Mac stops sending for any reason, the phone turns grey and says so within about 20 seconds. If ESPN reloads the draft room, the extension picks up again by itself.</p>
+
+<h2>Backup: bookmark</h2>
+<div class="box">Only needed if the extension ever fails. <span id="paired">Paired with your extension: this bookmark sends to the same phone link.</span><br>
+<a class="bm" id="bm" href="#">RTM Pick Reader (bookmark)</a>
+<div class="note">Drag it onto your bookmarks bar (Cmd+Shift+B shows the bar). To use it, click it while the ESPN draft room is open; it opens a small board window. For the bookmark to use the same phone link as the extension, open this page from the extension's "Backup bookmark" button.</div>
+<div id="qr"></div><div id="plink"></div><button id="copy">Copy phone link</button></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+var SRC="(function(){ var CH=\"__CH__\", ORIGIN=\"https://obinford.github.io\", BOARD=ORIGIN+\"/rtm-boards/espn/?feed=1\"+(CH.indexOf(\"__\")===0?\"\":\"&relay=\"+CH); if(window.__rtmReader){window.__rtmReader.open();return;} var w=null,last=\"\",badge=document.createElement(\"div\"); badge.style.cssText=\"position:fixed;z-index:2147483647;right:12px;bottom:12px;background:#211d17;color:#ece8df;border:2px solid #f08a3c;border-radius:8px;padding:8px 12px;font:600 13px system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:pointer\"; badge.title=\"RTM pick reader - click to reopen the board\";document.body.appendChild(badge); function open(){if(!w||w.closed)w=window.open(BOARD,\"rtm_board\",\"popup,width=460,height=860,left=40,top=40\");return w;} function read(){ var hdr=[].slice.call(document.querySelectorAll(\".draft-board-grid-header-cell\")),teams=hdr.length||12,slot=0; hdr.forEach(function(h,i){if(/(^|[\\s-])(my|own)/i.test(h.className))slot=i+1;}); var all=document.querySelectorAll(\".draft-board-grid-pick-cell\"),rounds=all.length?Math.round(all.length/teams):0; var picks=[].slice.call(document.querySelectorAll(\".draft-board-grid-pick-cell.completedPick\")).map(function(c){ var m=((c.querySelector(\".roundPick\")||{}).textContent||\"\").match(/(\\d+)\\.(\\d+)/);if(!m)return null; var t=function(s){return((c.querySelector(s)||{}).textContent||\"\").trim();}; return{n:(+m[1]-1)*teams+(+m[2]),name:(t(\".playerFirstName\")+\" \"+t(\".playerLastName\")).trim(),team:t(\".playerProTeam\")}; }).filter(Boolean).sort(function(a,b){return a.n-b.n;}); return{type:\"rtm-espn-draft\",picks:picks,slot:slot,teams:teams,rounds:rounds,found:all.length>0}; } function send(){ var d=read(); if(!d.found){badge.textContent=\"RTM reader: can't see ESPN's draft board on this page\";badge.style.borderColor=\"#e07a6c\";return;} if(w&&!w.closed){try{w.postMessage(d,ORIGIN);}catch(e){}} badge.style.borderColor=w&&!w.closed?\"#7fd18b\":\"#d9b35e\"; badge.textContent=w&&!w.closed?\"RTM reader: \"+d.picks.length+\" picks sent, slot \"+(d.slot||\"?\")+(CH.indexOf(\"__\")===0?\"\":\" - phone on\"):\"RTM reader: board closed - click to reopen\"; } var pend=0;function soon(){if(!pend)pend=setTimeout(function(){pend=0;send();},250);} badge.onclick=function(){open();send();}; open();send();setInterval(send,1500); try{new MutationObserver(soon).observe(document.body,{subtree:true,childList:true,characterData:true});}catch(e){} window.__rtmReader={open:function(){open();send();}}; })();", RE=/^[a-z0-9]{24}$/;
+var hash=(location.hash.match(/ch=([a-z0-9]{24})/)||[])[1], ch=null;
+try{ch=localStorage.getItem("rtm_relay_ch");}catch(e){}
+if(hash){ch=hash;try{localStorage.setItem("rtm_relay_ch",ch);}catch(e){}document.getElementById("paired").style.display="inline";}
+if(!ch||!RE.test(ch)){var a=new Uint8Array(24);crypto.getRandomValues(a);ch=Array.prototype.map.call(a,function(x){return "abcdefghijklmnopqrstuvwxyz0123456789"[x%36];}).join("");try{localStorage.setItem("rtm_relay_ch",ch);}catch(e){}}
+document.getElementById("bm").href="javascript:"+encodeURIComponent(SRC.replace("__CH__",ch));
+var BASE=location.href.split("#")[0].split("?")[0].replace(/reader\/?(index\.html)?$/,"");var link=BASE+"espn/?watch="+ch;document.getElementById("plink").textContent=link;
+try{new QRCode(document.getElementById("qr"),{text:link,width:180,height:180});}catch(e){document.getElementById("qr").style.display="none";}
+document.getElementById("copy").onclick=function(){try{navigator.clipboard.writeText(link).then(function(){document.getElementById("copy").textContent="Copied";});}catch(e){}};
+</script></body></html>
